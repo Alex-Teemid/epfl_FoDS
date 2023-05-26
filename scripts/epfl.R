@@ -269,4 +269,16 @@ x_c <- parse_date_time(x, orders = "Admy")
 x_d <- dmy(x)
 
 
-date <- January the 
+?make_date
+my_year <- c(2019, 2025, 2021, 2026)
+my_month <- c(1,2)
+
+date <- make_date(year = my_year, month = my_month)
+sort(date)
+
+month(date)
+
+dates1 <- c("1996-06-18","2008-12-21","2009-11-24","2015-01-28",
+            "1978-06-04","1998-03-13","1977-11-05","1970-02-04",
+            "1973-11-15","2013-02-17")
+year(dates1)
