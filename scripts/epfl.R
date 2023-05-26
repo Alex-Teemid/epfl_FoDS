@@ -282,3 +282,30 @@ dates1 <- c("1996-06-18","2008-12-21","2009-11-24","2015-01-28",
             "1978-06-04","1998-03-13","1977-11-05","1970-02-04",
             "1973-11-15","2013-02-17")
 year(dates1)
+
+dates <- c("June 18 1996","December 21 2008","November 24 2009",
+           "January 28 2015","June 04 1978","March 13 1998",
+           "November 05 1977","February 04 1970","November 15 1973",
+           "February 17 2013")
+
+dates <- mdy(dates)
+
+dates_add <- dates + days(x = 1) + months(x = 2) 
+
+dates
+dates_add
+?days
+
+make_date(2018)
+?floor_date()
+
+dates <- mdy(c("June 18 1996","December 21 2008","November 24 2009",
+           "January 28 2015","June 04 1978","March 13 1998",
+           "November 05 1977","February 04 1970","November 15 1973",
+           "February 17 2013"))
+
+x <- ymd_hms("2009-08-03 12:01:59.23")
+round_date(x, "sec")
+
+floor_date(dates, "week", week_start = 1)
+
