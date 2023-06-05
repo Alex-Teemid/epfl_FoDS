@@ -14,7 +14,8 @@ install.packages(c(
   "fs",
   "here",
   "leaflet",
-  "infer"
+  "infer",
+  "visdat"
 ))
 
 packages <- c(
@@ -33,10 +34,17 @@ packages <- c(
   "fs",
   "here",
   "leaflet",
-  "infer"
+  "infer",
+  "visdat"
 )
 
 lapply(packages, library, character.only = TRUE)
+
+install.packages("tidylog")
+library(tidylog)
+
+install.packages("ViewPipeSteps")
+library(ViewPipeSteps)
 
 
 sessionInfo()
@@ -78,7 +86,7 @@ str_glue("Hello my name is {first_name} {last_name}")
 library(stringr)
 
 rm(str_glue)
-mtcars %>% str_glue_data("{rownames(.)} has {hp} hp")
+mtcars %>% str_glue_data("{rownames(.)} has {hp} hp") #use in automation of reporting
 
 str_detect("BC Building (EPFL)", "EPFL") #detect a pattern 
 
@@ -308,4 +316,195 @@ x <- ymd_hms("2009-08-03 12:01:59.23")
 round_date(x, "sec")
 
 floor_date(dates, "week", week_start = 1)
+ceiling_date(dates, "week", week_start = 1)
 
+
+# Tibbles -----------------------------------------------------------------
+
+View(mtcars)
+head(mtcars, 3)
+tail(mtcars, 3)
+ncol(mtcars)
+nrow(mtcars)
+
+vis_dat(mtcars)
+vis_dat(CO2)
+vis_dat(airquality) # showing NAs
+vis_miss(airquality)
+
+sum(is.na(airquality))
+
+as_tibble(mtcars)
+
+#is this someting to be used in MCI dataset?
+mtcars_tibble <- as_tibble(
+  rownames_to_column(mtcars, "model"))
+
+names(mtcars_tibble) #can be used to check spelling
+
+tribble() #used to create a tiblle from scratch
+
+cosmic_table <- tribble(
+  ~Planet, ~Distance,
+  "Mars", 228L,
+  "Earth", 150L,
+  "Venus", 108L,
+  "Mercury",58L
+)
+cosmic_table
+
+
+#MCI 
+#maybe when importing its best to skip the names of the columns and rename them manually? using read_xlsx
+
+stones_data <- read_csv("data/rolling_stones.csv")
+stones_data
+
+sales_report <- read_tsv("data/sales_data.tsv", skip = 3)
+
+iris_tibble <- as_tibble(iris)
+glimpse(iris_tibble)
+
+iris_tibble |> 
+  select(Sepal.Length, Sepal.Width)
+
+glimpse(stones_data)
+select(stones_data, song_name, song_duration, song_name)
+
+select(stones_data, live, everything()) #reordering columns MCI do microbenchmark on this and the reorder function
+
+glimpse(sales_report)
+select(sales_report, data_zamowienia = order_date, status, everything())
+
+select(sales_report, order_date, banana)
+
+# Remember that the conditions written in filter() are tests, not assignments - that is why we use double equal sign in it 
+filter(stones_data, song_duration <= 280)
+filter(stones_data, live == FALSE, album_name == "Flashpoint")
+
+
+unique(sales_report$status)
+filter(sales_report, 
+       status == "In Process", 
+       country == "France", 
+       product_type == "Classic Cars")
+
+
+View(filter(stones_data, live)) # checking if the condition is TRUE on live events
+
+arrange(iris_tibble, Petal.Width, Petal.Length)
+
+?arrange
+?desc
+
+first_day <- seq(as.Date("1910/1/1"), as.Date("1920/1/1"), "years")
+desc(first_day)
+
+arrange(sales_report, desc(quantity))
+
+stones_data |>
+  select(song_name, song_popularity, song_duration, release_year) |>
+  filter(song_popularity > 10) |>
+  arrange(desc(release_year))
+
+glimpse(sales_report)  
+
+sales_report |> 
+  mutate(sales = quantity * unit_price,
+           year = year(dmy(order_date))) |> 
+           View()
+
+stones_data %>%
+  rename(song_title = song_name)
+
+glimpse(sales_report)
+sales_report |> 
+  rename(order_status = status,
+         date = order_date) 
+
+glimpse(stones_data)
+
+stones_data |> 
+  ggplot(aes(x = song_duration, y = song_popularity, colour = live)) +
+  geom_point() +
+  geom_vline(xintercept =60, color = "red") 
+
+stones_data |>
+  select(album_name, song_duration) |> 
+  group_by(album_name) |> 
+  summarise(total = sum(song_duration)) |> 
+  ggplot(aes(x = fct_reorder(album_name, total, .desc = TRUE), y = total)) +
+  geom_col(fill = "lightblue") + 
+  coord_flip() +
+  labs(title = "Total duration of each album",
+       subtitle = "Using colors to show live vs studio songs",
+       caption = "Source: Rolling Stone Spotify Dataset",
+       x = "Album Name",
+       y = "Duration",
+       fill = "Live song?")
+
+stones_data |> 
+  filter(release_year < 1995) |> 
+  ggplot(aes(x = song_popularity, y = song_duration, colour = album_name)) + 
+  geom_point() +
+  labs(title = "Popularity of albums for song dated prio year 1995", 
+       subtitle = "Which ablum is the most popular?") +
+  theme_light()
+
+
+# Intermediate Data Wrangling ---------------------------------------------
+stones_data |> 
+  distinct(release_year, live)
+
+glimpse(stones_data)
+
+stones_data |> 
+  select(song_name, song_popularity) |> 
+  mutate(highest_popularity = max(song_popularity), popularity_ratio = song_popularity/highest_popularity)
+
+glimpse(sales_report)
+
+sales_report |> 
+  mutate(sales = quantity * unit_price) |>
+  select(order_id, sales) |> 
+  summarise(number_of_order = n(), total_sales = sum(sales))
+
+stones_data %>%
+  group_by(live) %>%
+  summarise(mean_popularity = mean(song_popularity))
+
+sales_report %>%
+  mutate(sales = unit_price * quantity) %>%
+  group_by(product_type) %>%
+  summarise(sales = sum(sales)) |> 
+  arrange(desc(sales))
+
+#In stones_data, how would you get the shortest song per year and separating live (live=TRUE) from studio (live=FALSE)
+glimpse(stones_data)
+
+stones_data |> 
+  group_by(release_year, live) |> 
+  summarise(min_duration = min(song_duration)) |> 
+  ungroup()
+
+#Starting from stones_data, use group_by() to group the tibble by release_year then add a column named max_duration with the maximum song_duration per release_year.
+
+stones_data |> 
+  group_by(release_year) |> 
+  summarise(max_duration = max(song_duration)) |> 
+  ungroup()
+
+#Starting from sales_report, use group_by() to group the tibble by year (as created two units ago) then add a column named orders_per_year with the number of rows in each group.
+glimpse(sales_report)
+
+sales_report |> 
+  group_by(year(dmy(order_date))) |> 
+  summarise(orders_per_year = n())
+
+?n() #gives the current group size - does not have to be used with sum()
+
+sales_report %>%
+  mutate(sales = unit_price * quantity) %>% # no need for groups for this one
+  group_by(country) %>%
+  mutate(percent_of_sales_for_country = sales / sum(sales))  %>%
+  ungroup() # Let's not forget to ungroup
