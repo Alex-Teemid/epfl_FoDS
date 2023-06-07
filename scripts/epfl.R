@@ -508,3 +508,18 @@ sales_report %>%
   group_by(country) %>%
   mutate(percent_of_sales_for_country = sales / sum(sales))  %>%
   ungroup() # Let's not forget to ungroup
+
+
+stones_data |>
+  group_by(album_name) |>
+  filter(n() > 18) |> 
+  ungroup() |> 
+  distinct(album_name)
+  
+sales_report %>%
+  arrange(desc(quantity)) %>%
+  group_by(country) %>%
+  filter(row_number() == 2) 
+
+
+
