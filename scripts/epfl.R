@@ -65,7 +65,7 @@ nchar(character) - 1
 round(2.9876945, digits = 4)
 ?round
 
-substring(text="my text", first=2)
+substring(text = "my text", first = 2)
 toupper(substring(text = character, first = 3))
 ?substring
 
@@ -87,8 +87,9 @@ str_glue("Hello my name is {first_name} {last_name}")
 ?str_glue
 library(stringr)
 
-rm(str_glue)
+
 mtcars %>% str_glue_data("{rownames(.)} has {hp} hp") #use in automation of reporting
+mtcars
 
 str_detect("BC Building (EPFL)", "EPFL") #detect a pattern 
 
@@ -108,7 +109,6 @@ you through stringr’s functions for manipulating strings. The
 back page provides a concise reference to regular expressions, a 
 mini-language for describing, finding, and matching patterns in 
 strings."
-str_count(act4sc1, "Lord")
 
 my_r_animals <- c("dog", "cat", "canary")
 my_r_animals
@@ -216,8 +216,6 @@ bigger_than_25 <- my_vec > 25
 # R doesn't complain if the logical index vector you provide does not have the same number of items as the vector to subset.
 my_vec[bigger_than_25]
 sum(my_vec[my_vec > 25]) 
-
-3rd to last one
 
 ?tail
 
@@ -360,7 +358,7 @@ cosmic_table
 #maybe when importing its best to skip the names of the columns and rename them manually? using read_xlsx
 
 stones_data <- read_csv("data/rolling_stones.csv")
-stones_data
+spec(stones_data)
 
 sales_report <- read_tsv("data/sales_data.tsv", skip = 3)
 
@@ -596,4 +594,9 @@ ggplot(data = n_of_order_per_continent,
   geom_col()  +
   labs(title = "Number of orders per continent",
        subtitle = "Colors represent dealsizes")
+
+
+survey <- read_csv("projects/project_1/data/survey.csv")
+
+
 
