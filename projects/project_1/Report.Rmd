@@ -1,30 +1,111 @@
 ---
 title: "Project 1"
 author: "Piotr Kaczmarski"
-date: "2023-06-07"
+date: "2023-06-15"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+library(janitor)
+library(dplyr)
+library(lubridate)
 ```
 
-## R Markdown
+## Survey in the Netherlands
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+The participants of the survey were asked the following questions:
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+- What university do you come from?
+- What is your position?
+- How many employees are there in your research group?
+- How many Ph.D. students are there in your research group?
+- How many postdocs are there in your research group?
+- How many professors are there in your research group?
 
-```{r cars}
-summary(cars)
+```{r import, include=FALSE}
+survey_data <- read_csv("G:/My Drive/_Working Files/RProjects/epfl_FoDS/projects/project_1/data/survey.csv")
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r tidy data, include=FALSE}
+survey_data <- survey_data |> 
+  clean_names() |> 
+  rename(id = x1)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Part 1:
+
+**How many survey participants were there?** Show that you can find with code the number of lines in this dataset, since each line is one participant.
+
+```{r , include=TRUE}
+survey_data |> 
+  nrow()
+```
+**What are the data types of each column?** Show that you know at least one function that will show in its output the type of each column.
+
+```{r, include=TRUE}
+glimpse(survey_data)
+```
+
+
+**What are the top 3 universities with the most survey participants?** Show that you know how to compute some summary values on a dataset and extract only the lines that interest you from the result.
+
+```{r}
+survey_data |> 
+  group_by(university) |> 
+  summarise(total_participants = n()) |> 
+  arrange(desc(total_participants)) |> 
+  top_n(3) |> 
+  ungroup()
+```
+
+## Part 2:
+
+Obtain a bar chart of the number of survey participants for the different positions given in the column Position.
+
+```{r}
+survey_data |> 
+  group_by(position) |> 
+  ggplot(aes(x = position)) +
+  geom_bar() +
+  coord_flip() +
+  labs(title = "Number of survey participants by position",
+       subtitle = "The most common positions were Postdocs and PhDs")
+```
+## Part 3:
+
+Recreate the **sizes** column correctly, then plot a bar chart with {ggplot2} of the number of values in each of the bins. This is an opportunity to verify that you understand how to add a column in your dataset with values depending on the values of another columns (if other column equal x than this column equal y…)
+
+```{r}
+survey_data_corrected <- survey_data |> 
+  mutate(company_size = case_when(
+    number_of_employees <= 20 ~ "Small (0 to 20)",
+    number_of_employees < 50 ~ "Medium (21 to 50)",
+    number_of_employees < 200 ~ "Large (51 to 200)",
+    .default = "Extra large (over 200)")
+  )
+
+```
+
+```{r}
+survey_data_corrected |> 
+  ggplot(aes(x = company_size)) +
+  geom_bar() +
+  labs(title = "Number of survey participant by size of their group",
+       subtitle = "Most common group size among participants was 'small'")
+```
+
+## Part 4:
+
+Obtain a stacked horizontal bar plot with {ggplot2} that gives the percentage of employees that are Ph.D. students, postdocs and professors for each research group. So now we are interested in calculating and visualising percentage rather than absolute values. This way, all bars in our bar chart will have the same total size and we will be able to see difference in proportions.
+
+```{r}
+survey_data |> 
+  ggplot(aes(x = id, fill = position)) +
+  geom_bar() +
+  coord_flip() +
+  labs(title = "Number of survey participants by position",
+       subtitle = "The most common positions were Postdocs and PhDs")
+```
+
