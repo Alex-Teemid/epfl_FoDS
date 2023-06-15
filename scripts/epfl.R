@@ -35,7 +35,9 @@ packages <- c(
   "here",
   "leaflet",
   "infer",
-  "visdat"
+  "visdat",
+  "readxl",
+  "openxlsx"
 )
 
 lapply(packages, library, character.only = TRUE)
@@ -521,5 +523,77 @@ sales_report %>%
   group_by(country) %>%
   filter(row_number() == 2) 
 
+excel <- read_excel("data/country_data.xlsx", skip = 2)
+write.xlsx(x = excel, file = "data/excel.xlsx")
 
+sales_xls <- read_excel("data/sales_data_sample.xlsx", sheet = 2, skip = 2)
+names(sales_xls) <- tolower(names(sales_xls))
+
+View(sales_xls)
+
+sales_xls |> 
+  mutate(manager = if_else(dealsize %in% c("Small","Medium"), "Tim", "Sonia")) |> 
+  View()
+
+stones_data |>
+  mutate(mean = mean(song_popularity),
+    favourite = if_else(song_popularity > mean(song_popularity), TRUE, FALSE)) |> 
+  View()
+
+
+sales_xls %>%
+  mutate(manager = case_when(
+    dealsize == "Small" ~ "Tim",
+    dealsize == "Medium" ~ "Olga",
+    dealsize == "Large" ~ "Sonia",
+    .default = "-")) |> 
+  View()
+
+stones_data |> 
+  mutate(case_when(
+    song_duration <= 200 ~ "short",
+    song_duration <= 300 ~ "medium",
+    .default = "long")) |> 
+  View()
+
+
+sales_xls_w_continent <- sales_xls %>%
+  mutate(continent = case_when(
+    # We will cover shorter ways to do long match lists like this later
+    country == "USA" ~ "North America",
+    country == "France" ~ "Europe",
+    country == "Norway" ~ "Europe",
+    country == "Australia" ~ "Oceania",
+    country == "Finland" ~ "Europe",
+    country == "Austria" ~ "Europe",
+    country == "UK" ~ "Europe", 
+    country == "Spain" ~ "Europe",
+    country == "Sweden" ~ "Europe",
+    country == "Singapore" ~ "Asia",
+    country == "Canada" ~ "North America",
+    country == "Japan" ~ "Asia",
+    country == "Italy" ~ "Europe",
+    country == "Denmark" ~ "Europe",
+    country == "Belgium" ~ "Europe",
+    country == "Philippines" ~ "Asia",
+    country == "Germany" ~ "Europe",
+    country == "Switzerland" ~ "Europe",
+    country == "Ireland" ~ "Europe"
+  ))
+
+n_of_order_per_continent <- 
+  sales_xls_w_continent %>% 
+  group_by(continent, dealsize) %>% 
+  summarise(n_of_order = n()) %>% 
+  ungroup()
+
+View(n_of_order_per_continent)
+
+ggplot(data = n_of_order_per_continent,
+       mapping = aes(x = continent,
+                     y = n_of_order,
+                     fill = dealsize)) +
+  geom_col()  +
+  labs(title = "Number of orders per continent",
+       subtitle = "Colors represent dealsizes")
 
