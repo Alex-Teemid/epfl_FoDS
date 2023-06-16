@@ -73,6 +73,7 @@ survey_data |>
   labs(title = "Number of survey participants by position",
        subtitle = "The most common positions were Postdocs and PhDs")
 ```
+
 ## Part 3:
 
 Recreate the **sizes** column correctly, then plot a bar chart with {ggplot2} of the number of values in each of the bins. This is an opportunity to verify that you understand how to add a column in your dataset with values depending on the values of another columns (if other column equal x than this column equal y…)
@@ -100,12 +101,23 @@ survey_data_corrected |>
 
 Obtain a stacked horizontal bar plot with {ggplot2} that gives the percentage of employees that are Ph.D. students, postdocs and professors for each research group. So now we are interested in calculating and visualising percentage rather than absolute values. This way, all bars in our bar chart will have the same total size and we will be able to see difference in proportions.
 
+
+```{r reshape survey data }
+
+```
+
+
 ```{r}
 survey_data |> 
-  ggplot(aes(x = id, fill = position)) +
-  geom_bar() +
-  coord_flip() +
-  labs(title = "Number of survey participants by position",
-       subtitle = "The most common positions were Postdocs and PhDs")
+  pivot_longer(cols = number_of_ph_d_students : number_of_professors , names_to = "employee_type", values_to = "employee_number") |> 
+  ggplot(aes(x = id, y = employee_number, fill = employee_type)) + 
+  geom_col(position = "fill") +
+  coord_flip() + 
+  labs(title = "Employees role percentages for each group",
+      subtitle = "We can see that goups can have very different splits",
+      y = "Percentage",
+      x = "Research group id") +
+  theme(legend.position = "bottom")
+
 ```
 
