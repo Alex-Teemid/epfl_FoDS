@@ -596,7 +596,61 @@ ggplot(data = n_of_order_per_continent,
        subtitle = "Colors represent dealsizes")
 
 
+# Wide & long data --------------------------------------------------------
+
 survey <- read_csv("projects/project_1/data/survey.csv")
 
+survey_data |> 
+  ggplot(aes(x = id, fill = position)) +
+  geom_bar() +
+  coord_flip() +
+  labs(title = "Number of survey participants by position",
+       subtitle = "The most common positions were Postdocs and PhDs")
 
+glimpse(survey_data)
+
+survey_data |> 
+  pivot_longer(cols = number_of_ph_d_students : number_of_professors , names_to = "employee_type", values_to = "employee_number") |> 
+  ggplot(aes(x = id, y = employee_number, fill = employee_type)) + 
+  geom_col(position = "fill") +
+  coord_flip() + 
+  labs(title = "Employees role percentages for each group",
+      subtitle = "We can see that goups can have very different splits",
+      y = "Percentage",
+      x = "Research group id") +
+  theme(legend.position = "bottom")
+
+
+# Reshaping tibbles -------------------------------------------------------
+
+stones_data |> 
+  group_by(album_name) 
+  mutate(number_of_songs = )
+  tidyr::pivot_longer()
+
+  
+stones_data |>
+  group_by(album_name) |>
+  mutate(number_of_songs = n()) |> 
+  mutate(avg_popularity = mean(song_popularity)) |> 
+  select(album_name, number_of_songs, avg_popularity) |> 
+  tidyr::pivot_longer(
+    cols = -album_name,
+    names_to = "metrics",
+    values_to = "value") |> 
+  View()
+  
+
+#same as above can be achieved with:
+
+stones_data |>
+  group_by(album_name) |>
+  summarise(
+    number_of_songs = n(),
+    avg_popularity = mean(song_popularity)) |> 
+  tidyr::pivot_longer(
+    cols = -album_name,
+    names_to = "metrics",
+    values_to = "value") |> 
+  View()
 
