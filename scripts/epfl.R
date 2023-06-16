@@ -202,7 +202,8 @@ my_numbers
 my_numbers <- c(34, 21, 5, 21, 98, 9, 0)
 my_numbers[6:3]
  
-# Sometimes, you want to get all the items in a vector that satisfy a specific condition. This is known as subsetting.
+# Sometimes, you want to get all the items in a vector that satisfy a specific condition. 
+# This is known as subsetting.
 my_vec <- c(1,2,3)
 my_index <- c(FALSE,TRUE,FALSE)
 my_vec[my_index] # Should just return 2
@@ -213,7 +214,8 @@ my_numbers[higher_than]
 my_vec <- c(2,4,5,34,29,1,0,8,78)
 bigger_than_25 <- my_vec > 25
 
-# R doesn't complain if the logical index vector you provide does not have the same number of items as the vector to subset.
+# R doesn't complain if the logical index vector you provide does not have the same 
+# number of items as the vector to subset.
 my_vec[bigger_than_25]
 sum(my_vec[my_vec > 25]) 
 
@@ -355,7 +357,8 @@ cosmic_table
 
 
 #MCI 
-#maybe when importing its best to skip the names of the columns and rename them manually? using read_xlsx
+#maybe when importing its best to skip the names of the columns and rename them 
+#manually? using read_xlsx
 
 stones_data <- read_csv("data/rolling_stones.csv")
 spec(stones_data)
@@ -371,14 +374,16 @@ iris_tibble |>
 glimpse(stones_data)
 select(stones_data, song_name, song_duration, song_name)
 
-select(stones_data, live, everything()) #reordering columns MCI do microbenchmark on this and the reorder function
+select(stones_data, live, everything()) #reordering columns MCI do microbenchmark 
+#on this and the reorder function
 
 glimpse(sales_report)
 select(sales_report, data_zamowienia = order_date, status, everything())
 
 select(sales_report, order_date, banana)
 
-# Remember that the conditions written in filter() are tests, not assignments - that is why we use double equal sign in it 
+# Remember that the conditions written in filter() are tests, not assignments - 
+# that is why we use double equal sign in it 
 filter(stones_data, song_duration <= 280)
 filter(stones_data, live == FALSE, album_name == "Flashpoint")
 
@@ -460,7 +465,9 @@ glimpse(stones_data)
 
 stones_data |> 
   select(song_name, song_popularity) |> 
-  mutate(highest_popularity = max(song_popularity), popularity_ratio = song_popularity/highest_popularity)
+  mutate(
+    highest_popularity = max(song_popularity),
+    popularity_ratio = song_popularity/highest_popularity)
 
 glimpse(sales_report)
 
@@ -479,7 +486,8 @@ sales_report %>%
   summarise(sales = sum(sales)) |> 
   arrange(desc(sales))
 
-#In stones_data, how would you get the shortest song per year and separating live (live=TRUE) from studio (live=FALSE)
+#In stones_data, how would you get the shortest song per year and separating live (live=TRUE) 
+#from studio (live=FALSE)
 glimpse(stones_data)
 
 stones_data |> 
@@ -487,14 +495,16 @@ stones_data |>
   summarise(min_duration = min(song_duration)) |> 
   ungroup()
 
-#Starting from stones_data, use group_by() to group the tibble by release_year then add a column named max_duration with the maximum song_duration per release_year.
+#Starting from stones_data, use group_by() to group the tibble by release_year 
+#then add a column named max_duration with the maximum song_duration per release_year.
 
 stones_data |> 
   group_by(release_year) |> 
   summarise(max_duration = max(song_duration)) |> 
   ungroup()
 
-#Starting from sales_report, use group_by() to group the tibble by year (as created two units ago) then add a column named orders_per_year with the number of rows in each group.
+#Starting from sales_report, use group_by() to group the tibble by year (as created 
+#two units ago) then add a column named orders_per_year with the number of rows in each group.
 glimpse(sales_report)
 
 sales_report |> 
@@ -610,7 +620,9 @@ survey_data |>
 glimpse(survey_data)
 
 survey_data |> 
-  pivot_longer(cols = number_of_ph_d_students : number_of_professors , names_to = "employee_type", values_to = "employee_number") |> 
+  pivot_longer(
+    cols = number_of_ph_d_students : number_of_professors,
+    names_to = "employee_type", values_to = "employee_number") |> 
   ggplot(aes(x = id, y = employee_number, fill = employee_type)) + 
   geom_col(position = "fill") +
   coord_flip() + 
@@ -654,3 +666,173 @@ stones_data |>
     values_to = "value") |> 
   View()
 
+sales_report |> 
+  group_by(product_type) |> 
+  summarise(
+    number_of_orders = n(),
+    total_quantity = sum(quantity)) |> 
+  tidyr::pivot_longer(
+    cols = c("number_of_orders", "total_quantity"),
+    names_to = "metrics",
+    values_to = "value") |> 
+  View()
+
+
+
+stones_data |> 
+  group_by(release_year, live) |> 
+  summarise(total = n()) |> 
+  pivot_wider(
+    names_from = live,
+    values_from = total,
+    values_fill = list(total = 0)
+  ) |> 
+  rename(not_live = `FALSE`, live = `TRUE`) |> 
+  View()
+
+sales_report |> 
+  mutate(sales = unit_price * quantity) |> 
+  group_by(status, deal_size) |> 
+  summarise(total = sum(sales)) |> 
+  pivot_wider(
+    names_from = deal_size,
+    values_from = total,
+    values_fill = list(total = 0)) |> 
+  View()
+
+
+# Pivoting ----------------------------------------------------------------
+
+department_revenue <- tibble(
+  department = c("Grocery", "Toys"),
+  aug_2018 = c(4234, 2349),
+  sep_2018 = c(234, 2454),
+  oct_2018 = c(98, 2354),
+  nov_2018 = c(78698, 8900),
+  dec_2018 = c(9876, 8901)
+)
+
+department_revenue  |> 
+  pivot_longer(cols = c(-department), 
+               names_to = "months", 
+               values_to = "revenue") |> 
+  mutate(months = lubridate::parse_date_time(months, orders="%m_%Y", truncated = 4))  |> 
+  ggplot(aes(x = months, y = revenue, color = department)) +
+  geom_line()
+
+
+candidate_grades <- tibble(
+  candidate = c("A", "B", "C"),
+  judge_1 = c(15, 19, 13),
+  judge_2 = c(13, 12, 14),
+  judge_3 = c(16, 11, 14)
+)       
+
+
+candidate_grades %>%
+  tidyr::pivot_longer(
+    cols = c(-candidate), 
+    names_to = "judge", 
+    values_to = "grade") %>%
+  ggplot(mapping = aes(x = candidate, y = grade, fill = judge)) +
+  geom_col()
+
+candidate_grades <- tibble(
+  candidate = c("A", "B", "C"),
+  judge_1 = c(15, 19, 13),
+  judge_2 = c(13, 12, 14),
+  judge_3 = c(16, 11, 14)
+)
+
+
+candidate_grades %>%
+  tidyr::pivot_longer(
+    cols = c(judge_1, judge_2, judge_3), 
+    names_to = "judge", 
+    values_to = "grade") %>%
+  group_by(candidate) %>% 
+  summarise(min_grade = min(grade),
+            max_grade = max(grade)) %>% 
+  tidyr::pivot_longer(
+  cols = c(min_grade, max_grade), 
+  names_to = "grade_type", 
+  values_to = "grade")
+
+
+
+# Nested values -----------------------------------------------------------
+
+client_order <- tibble(
+  client_name = c("Smith", "Martin", "Muller"),
+  meal = c("steak, lentils, feta", "beans, feta", "olive, feta, beans")
+)
+
+client_order %>%
+  mutate(items = str_split(meal, ", ")) |> 
+  pull(items)
+
+client_order %>%
+  mutate(items = str_split(meal, ", ")) %>%
+  unnest_longer(items) |> 
+  View()
+
+client_items <- client_order %>%
+  mutate(items = str_split(meal, ", ")) %>%
+  unnest_longer(items)
+
+client_items %>%
+  group_by(items) %>%
+  summarise(n_of_order = n()) |> 
+  ungroup() |> 
+  arrange(desc(n_of_order))
+
+#the above can be easily done with count:
+
+client_items |> 
+  count(items, name = "n_of_order", sort = TRUE)
+
+glimpse(starwars)
+
+starwars |> 
+  select(name, films, vehicles, starships) |> 
+  View()
+
+
+starwars |> 
+  count(films, name, sort = TRUE)
+
+starwars |> 
+  unnest_longer(films) |> 
+  select(films, name) |> 
+  count(films, name = "n_of_characters", sort = TRUE)
+
+
+# Binding -----------------------------------------------------------------
+
+bind_rows(stones_data, stones_data, stones_data)
+
+glimpse(stones_data)
+
+stones_data %>%
+  select(album_name, release_year, everything()) %>%
+  bind_rows(stones_data) 
+
+stones_data %>%
+  select(release_year) %>% # Only keeping release_year
+  bind_cols(
+    select(stones_data, -release_year)) # No release_year
+
+budget_19s <- tibble(
+  country = c("France", "Germany"),
+  budget_1900 = c(1234, 4511),
+  budget_1901 = c(5449,  3214),
+  budget_1902 = c(8790, 9876)
+)
+
+budget_20s <- tibble(
+  country =  c("France", "Germany"),
+  budget_2000 = c(9877, 9867),
+  budget_2001 = c(1243,  5769)
+)
+
+bind_cols(budget_19s, budget_20s)
