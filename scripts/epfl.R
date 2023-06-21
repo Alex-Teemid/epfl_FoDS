@@ -836,3 +836,67 @@ budget_20s <- tibble(
 )
 
 bind_cols(budget_19s, budget_20s)
+
+
+# Joining -----------------------------------------------------------------
+#instead of making a key we can join using multiple columns to be used in MCI
+table_1 %>%
+  left_join(table_2, by=c("Canton", "Zone"))
+
+shop_db <- dbConnect(RSQLite::SQLite(), "data/shop.db") 
+
+dbListTables(shop_db)
+dbDisconnect(shop_db)
+
+sales <- DBI::dbGetQuery(shop_db, 
+                         "SELECT date, price FROM sales;")
+
+customers_tbl <- tbl(shop_db, "customers")
+
+customers_tbl %>%
+  select(first_name) %>%
+  show_query()
+
+sales
+class(sales)
+
+
+sales_tbl <- tbl(shop_db, "sales") 
+
+customers_tbl %>%
+  left_join(sales_tbl, by=c("customer_id")) %>%
+  show_query()
+
+
+
+
+
+snowflake_mci <- dbConnect(odbc::odbc(), "Snowflake_MCI") #establish odbc connection with OneRing data source 
+snowflake_sales_data <- DBI::dbGetQuery(snowflake_mci, #import sales for the last period 
+                                        "SELECT PROD_PL2A, PROD_PL4,GPCH_PARAMETER,FISCAL_YEAR , PROD_PL6_PROFIT_CENTER_NBR, PROD_PL6_PROFIT_CENTER, CURRENCY, CER_RATE, MARKET_REGION,
+                             SUM(SALES) AS SALES
+                             FROM PROD_DIA.DP_FINANCE_BA_MCI.BA_MCI
+                             WHERE PROD_PL2A = 'RDS' AND PROD_PL4 IN ('CC', 'IM')
+                             GROUP BY PROD_PL2A, PROD_PL4,GPCH_PARAMETER , FISCAL_YEAR, PROD_PL6_PROFIT_CENTER_NBR, PROD_PL6_PROFIT_CENTER, CURRENCY, CER_RATE, MARKET_REGION
+                             ORDER BY FISCAL_YEAR ASC;")
+  
+mci_tbl <- tbl(snowflake_mci, "BA_MCI") #save table connection
+glimpse(mci_tbl)
+
+mci_tbl |> 
+  select(PROD_PL4) 
+
+mci_tbl |> 
+  select(PROD_PL4) |> 
+  distinct_all() |> 
+  show_query()
+
+
+customers_tbl %>%
+  select(first_name) %>%
+  collect() #collect is used to retrive the entire table | verything that comes before collect() in the pipeline will be converted to SQL 
+
+
+
+
+

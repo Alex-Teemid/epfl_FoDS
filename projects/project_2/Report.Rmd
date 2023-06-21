@@ -1,0 +1,121 @@
+---
+title: "Report"
+author: "Piotr Kaczmarski"
+date: "2023-06-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(DBI)
+library(odbc)
+library(tidyverse)
+```
+
+## Part 1
+
+Load the data into R. Here you get more experience extracting data from a SQL database. Feel free to use 'DB Browser for SQLite' if you want to peek at the data first, but then make sure you manage to extract the data with code in two different tibbles
+
+```{r save data}
+connection <- dbConnect(RSQLite::SQLite(), "G:/My Drive/_Working Files/RProjects/epfl_FoDS/projects/project_2/data/likert_survey.db")
+dbListTables(connection)
+professors_tbl <- tbl(connection, "PROFESSORS") |> 
+  collect()
+students_tbl <- tbl(connection, "STUDENTS") |> 
+  collect()
+```
+
+## Part 2
+
+What is the total number of answers obtained from students?
+
+```{r}
+students_tbl |> 
+  select(-QuestionID) |> 
+  pivot_longer(cols = everything(),
+              names_to = "answers",
+              values_to = "no_of_answers") |>
+  group_by(answers) |> 
+  summarise(total = sum(as.integer(no_of_answers))) |> 
+  mutate(total_answers = sum(total))
+```
+
+
+What is the total number of answers obtained from professors?
+```{r}
+professors_tbl |> 
+  select(-QuestionID) |> 
+  pivot_longer(cols = everything(),
+              names_to = "answers",
+              values_to = "no_of_answers") |>
+  group_by(answers) |> 
+  summarise(total = sum(as.integer(no_of_answers))) |> 
+  mutate(total_answers = sum(total))
+```
+Does each question have the same number of answers?
+
+```{r}
+students_tbl |> 
+  select(-QuestionID) |> 
+  pivot_longer(cols = everything(),
+              names_to = "answers",
+              values_to = "no_of_answers") |>
+  group_by(answers) |> 
+  summarise(total = sum(as.integer(no_of_answers))) 
+
+professors_tbl |> 
+  select(-QuestionID) |> 
+  pivot_longer(cols = everything(),
+              names_to = "answers",
+              values_to = "no_of_answers") |>
+  group_by(answers) |> 
+  summarise(total = sum(as.integer(no_of_answers))) 
+```
+
+## Part 3
+
+Obtain side-by-side bar charts comparing the distribution of answers of the students versus the professors for each question. For this part, you might want to refresh your knowledge on mini charts with facets, covered in S10U07.
+
+```{r}
+students_tbl_long <-  students_tbl |> 
+  pivot_longer(cols = TotallyDisagree:TotallyAgree,
+              names_to = "types_of_responses",
+              values_to = "no_of_answers") |>
+  group_by(QuestionID,types_of_responses) |> 
+  summarise(total = sum(as.integer(no_of_answers))) |> 
+  mutate(respondent = "student")
+
+professors_tbl_long <- professors_tbl |> 
+  pivot_longer(cols =  TotallyDisagree:TotallyAgree,
+              names_to = "types_of_responses",
+              values_to = "no_of_answers") |>
+  group_by(QuestionID,types_of_responses) |> 
+  summarise(total = sum(as.integer(no_of_answers))) |> 
+  mutate(respondent = "professor")
+
+total_tbl <- students_tbl_long |> 
+  bind_rows(professors_tbl_long) |> 
+  ungroup()
+
+total_tbl |> 
+  ggplot(aes(x = types_of_responses, y = total)) +
+  geom_col(aes(fill = respondent), position = "dodge") +
+  facet_wrap(vars(QuestionID)) +
+  theme(axis.text.x = element_text(angle = 90))
+
+
+
+```
+
+## Part 4
+
+By binding, reshaping, grouping and filtering, create one single tibble that shows only the type of answer with the highest number of answers, for each question, and for each respondent type.
+
+```{r}
+
+total_tbl |> 
+  group_by(QuestionID,respondent) |> 
+  mutate(max = max(total)) |> 
+  filter(total == max) |> 
+  arrange(as.integer(QuestionID))
+```
+
