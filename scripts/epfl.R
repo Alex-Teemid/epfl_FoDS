@@ -42,6 +42,11 @@ packages <- c(
 
 lapply(packages, library, character.only = TRUE)
 
+# For encryption: ---------------------------------------------------------
+library(digest)
+library(encryptr) #devtools::install_github("SurgicalInformatics/encryptr")
+
+
 install.packages("tidylog")
 library(tidylog)
 
@@ -897,6 +902,172 @@ customers_tbl %>%
   collect() #collect is used to retrive the entire table | verything that comes before collect() in the pipeline will be converted to SQL 
 
 
+# Encryption and Anonnymization --------------------------------------------
+
+digest("Leo Johnson", algo = "md5")
+digest("Leo Johnson", algo = "crc32")
+digest("Leo Johnson", algo = "sha256")
+
+sales_report %>%
+  mutate(country = digest(country)) %>%
+  select(country)
+
+genkeys() ## Generates both public and private keys in current directory 
+encrypted_name <- "Norma Jennings" |> 
+  encrypt_vec(public_key_path = "./id_rsa.pub")
+
+decrypt_vec(encrypted_name)
 
 
+encrypted_data <- sales_report |> 
+  select(deal_size) |> 
+  encrypt(deal_size)
 
+encrypted_data |> 
+  decrypt(deal_size)
+
+encrypt_file(.path = "data/sales_data.tsv",
+             public_key_path = "./id_rsa.pub",
+             crypt_file_name = "data/sales_data.tsv.encryptr.bin")
+
+decrypt_file(.path = "data/sales_data.tsv.encryptr.bin",
+             private_key_path = "id_rsa",
+             file_name = "decrypted_file.tsv")
+
+encrypted_exercise1 <- "a81e94bf2fa0a9ec6a6805ed5fe95deb0c2751d7c2722a0fbaa5223dabe6fb7a4e39df7c8299997ef5ef71720c8342773980a0a5f3e12b26352ed12f5b95e7b63b7e66deb78e803d5164db7386574d9b7e7bcb402b4964de488121d73b43affc2377ef7abd7941b4283a07aeaa84eabafa460434d8796d49d19474e9d35c53577f0c8895bcc4d9a933ca5efc57bfd30637e395e7b8dba6c563bdb666c88191011ff76e94ca363845cd374a646422db196b778ac4ce0e9d00a1262dc7ee157071323a041298d316e348544de373c7e51336401d3df6ad601e2efed69cbf913c54f00675080067caeb11018adfc949142543663d7c69f00e54272cf8201c2e627e"
+decrypt_vec(encrypted_exercise1, private_key_path = "data/encryption/id_rsa")
+
+decrypt_file(.path = "data/encryption/message.txt.encryptr.bin",
+            file_name = "encrypted_exercise2.txt",
+            private_key_path = "data/encryption/id_rsa")
+
+
+# Advanced data wrangling -------------------------------------------------
+
+sales_xls <- read_excel("data/sales_data_sample.xlsx", sheet = "sales_data_sample", skip = 2) |> 
+  clean_names()
+
+glimpse(sales_xls)
+
+stones_data |> 
+  select(starts_with("song_")) |> 
+  View()
+
+stones_data |> 
+  select(starts_with("song_"), ends_with("_year")) |> 
+  View()
+
+sales_xls |> 
+  select(contains("line"), everything()) |> 
+  View()
+
+sales_xls |> 
+  select(3, everything()) |> 
+  View()
+
+sales_xls |> 
+  select_if(is.numeric)
+
+sales_xls |> 
+  mutate(full_adress = str_glue("{address_line1}, {postal_code}, {city})")) |> 
+  pull(full_adress) 
+
+
+# %in% --------------------------------------------------------------------
+
+sales_xls |> 
+  filter(state %in% c("NY", "CA")) |> 
+  View()
+
+
+# between() --------------------------------------------------------------
+
+stones_data |> 
+  filter(between(release_year, 1985, 1990)) |> 
+  View()
+
+#string to detect 
+
+stones_data |> 
+  filter(str_detect(song_name, "Love")) |> 
+  View()
+
+# rename_all() ------------------------------------------------------------
+
+sales_report %>%
+  rename_all(str_to_upper) #N ote that we are giving a function as an argument so we don't put parentheses after it
+
+
+# advanced mutate() -------------------------------------------------------
+
+sales_report |> 
+  mutate(order_date = dmy(order_date)) |> 
+  glimpse()
+
+# If you don't like the sound of vectorised/non-vectorised functions, 
+# think of it functions that work-even-with-multiple-items/work-only-on-one-item.
+
+sales_xls %>%
+  mutate(date = make_date(year_id, month_id, qtr_id)) |> 
+  pull(date)
+
+#for(i in <a collection>) {
+#  <do something with value i>
+#}
+
+for(i in c("hello", "hallo", "bonjour")) {
+  print(i)
+}
+
+for(i in c(10, 100, 1000)) {
+  print(i + 10)
+}
+
+
+new_plus10_vector <- c()
+for(i in c(10, 100, 1000)) {
+  new_plus10_vector <- append(new_plus10_vector, (i + 10))
+}
+new_plus10_vector
+
+collection_of_hashes <- c()
+for(i in c("Serena Williams", "Roger Federer")) {
+  collection_of_hashes <- append(collection_of_hashes, digest(i))
+}
+collection_of_hashes
+
+
+# example for loop --------------------------------------------------------
+
+tennis_data <- tibble(
+  full_name = c("Serena Williams", "Roger Federer"),
+  number_of_titles = c(72, 102)
+)
+
+# Let's do the first transformations in a pipeline
+tennis_data_lower <- tennis_data %>%
+  mutate(full_name = str_to_lower(full_name),
+    number_of_titles = round(number_of_titles))
+
+# Here we have to stop our pipeline to use a for loop
+digests_of_name <- c()
+for(name in tennis_data_lower$full_name) {
+  digests_of_name <- append(digests_of_name, digest(name)) 
+}
+
+# Once our job is done with the for loop, we can restart the pipeline
+tennis_data_lower %>%
+  mutate(hashed_name = digests_of_name) %>% # give to mutate our newly created vector
+  separate(full_name, into=c("first_name", "last_name"), sep = " ") %>%
+  select(-first_name)
+
+
+# purr --------------------------------------------------------------------
+
+library(purrr) 
+
+map(c("Serena Williams", "Roger Federer"), digest)
+
+tennis_data %>%
+  mutate(anonymized_name = map(full_name, digest)) |> 
+  unnest(anonymized_name)
