@@ -41,6 +41,7 @@ packages <- c(
 )
 
 lapply(packages, library, character.only = TRUE)
+lapply(packages, library, character.only = TRUE)
 
 install.packages("tidylog")
 library(tidylog)
