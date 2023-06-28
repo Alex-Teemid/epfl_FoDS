@@ -41,6 +41,7 @@ packages <- c(
 )
 
 lapply(packages, library, character.only = TRUE)
+
 lapply(packages, library, character.only = TRUE)
 
 # For encryption: ---------------------------------------------------------
@@ -1072,3 +1073,33 @@ map(c("Serena Williams", "Roger Federer"), digest)
 tennis_data %>%
   mutate(anonymized_name = map(full_name, digest)) |> 
   unnest(anonymized_name)
+
+sales_report |> 
+  arrange(country, order_date) |> 
+  group_by(country) |> 
+  mutate(first = first(order_date), last = last(order_date)) |> 
+  ungroup() |> 
+  mutate(sales = quantity * unit_price, sales_vs_last = sales/lag(sales)-1, sales_vs_next = sales/lead(sales)-1) |> 
+  View()
+
+my_first_function <- function() { "hello" }
+
+#There are several differences between functions and static values. 
+#An important one is that functions are evaluated every time you call them, 
+#whereas normal variables are evaluated and saved only on their first assignment.
+
+lubridate::now()
+
+time_now <- lubridate::now()
+
+time_now #does not change its value
+
+what_is_now_dynamic <- function() { lubridate::now() }
+
+what_is_now_dynamic()
+
+now_tomorrow <- function() {
+  lubridate::now() + lubridate::days(1)
+}
+
+now_tomorrow()
