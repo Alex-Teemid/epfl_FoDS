@@ -1,4 +1,6 @@
 install.packages(c(
+  "gifski",
+  "gganimate",
   "tidyverse",
   "rmarkdown",
   "janitor",
@@ -15,10 +17,14 @@ install.packages(c(
   "here",
   "leaflet",
   "infer",
-  "visdat"
+  "visdat",
+  "readxl",
+  "openxlsx"
 ))
 
 packages <- c(
+  "gifski",
+  "gganimate",
   "tidyverse",
   "rmarkdown",
   "janitor",
@@ -1403,3 +1409,118 @@ avg_sales_by_dealsize %>%
   geom_point() +
   geom_text(aes(label=dealsize), nudge_y = 300)
 
+avg_sales_by_dealsize %>%
+  ggplot(aes(x=dealsize, y=avg_sale)) +
+  geom_col() +
+  geom_text(aes(label=round(avg_sale)), nudge_y = 300)
+
+avg_sales_by_dealsize %>%
+  ggplot(aes(x=dealsize, y=avg_sale)) +
+  geom_col() +
+  geom_text(
+    # Order by avg_sale and keep only first and last row
+    data=avg_sales_by_dealsize %>% arrange(avg_sale) %>%
+      filter(row_number()==1 | row_number()==n()),
+    aes(label=round(avg_sale)), nudge_y = 300)
+
+
+# Data Visualisation - Manual scale / scale functions --------------------------
+ggplot2::scale
+
+avg_sales_by_dealsize %>%
+  ggplot(aes(x=dealsize, y=avg_sale, fill=dealsize)) +
+  geom_col() +
+  geom_text(aes(label=round(avg_sale)), nudge_y = 300)
+
+avg_sales_by_dealsize %>%
+  ggplot(aes(x=dealsize, y=avg_sale, fill=dealsize)) +
+  geom_col() +
+  geom_text(aes(label=round(avg_sale)), nudge_y = 300) +
+  scale_fill_manual(values = c("yellow", "black", "pink"))
+
+# This will produce the same chart as above / Roche colours
+dealsize_colors <- c("#022366", "#0b41cd", "#1482FA")
+
+avg_sales_by_dealsize %>%
+  ggplot(aes(x=dealsize, y=avg_sale, fill=dealsize)) +
+  geom_col() +
+  geom_text(aes(label=round(avg_sale)), nudge_y = 300, colour = dealsize_colors) +
+  scale_fill_manual(values = dealsize_colors) 
+
+# If you name the colors, you can give them in any order.
+dealsize_colors <- c("Large"="#FFD700", "Small"="#B8860B", "Medium"="#00BFFF")
+
+
+# Data visualisation - Plotting maps --------------------------------------
+
+airbnb %>%
+  ggplot(aes(x=longitude, y=latitude)) +
+  geom_point(alpha=0.5)
+
+texas_area <- c(left=-107.86, bottom=25.12, right=-92.26, top=36.94) 
+texas_map <- get_stamenmap(bbox=texas_area, zoom=8) 
+
+ggmap(texas_map) +
+  geom_point(data=airbnb, aes(x=longitude, y=latitude), alpha=0.5)  +
+  labs(title="Where are AirBNB listings in Texas?",
+       subtitle="Geolocation of 18k listings over the last 8 years")
+
+library(leaflet)
+airbnb %>%
+  sample_n(100) %>% # Remove at your own risk
+  leaflet() %>% 
+  addTiles() %>% 
+  addMarkers(lng=~longitude,lat=~latitude)
+
+#adding markers
+airbnb %>%
+  sample_n(100) %>% # Remove at your own risk
+  leaflet() %>% 
+  addTiles() %>% 
+  addProviderTiles("Esri.WorldPhysical") |> 
+  addMarkers(lng=~longitude,lat=~latitude,
+             label=~as.character(average_rate_per_night),
+             popup=~description)
+
+
+# Data visualisation - gganimate ------------------------------------------
+
+mp <- tribble(
+  ~Month,~Area,~Price,
+  "2017-01", "EU",   "12",    
+  "2017-01", "USA",  "17",    
+  "2017-02", "EU",   "11",    
+  "2017-02", "USA",  "13",    
+  "2017-03", "EU",   "8",    
+  "2017-03", "USA",  "11",
+  "2017-04", "EU",   "10",    
+  "2017-04", "USA",  "15"   
+) 
+
+plot <- mp %>%
+  mutate(Month=lubridate::parse_date_time(Month, orders="ym"),
+         Price=as.numeric(Price)) %>%
+  ggplot(mapping=aes(x=Month, y=Price)) +
+  geom_line(mapping=aes(color=Area, group=Area), size=2) +
+  theme_minimal() +
+  labs(title="Price per Area per Month",
+       subtitle="EU prices are lower than USA ones")
+
+plot
+
+plot +
+  gganimate::transition_reveal(along = Month)
+
+airq <- airquality
+airq$Month <- format(ISOdate(2004,1:12,1),"%B")[airq$Month]
+
+ggplot(airq, aes(Day, Temp, group = Month)) + 
+  geom_line() + 
+  geom_segment(aes(xend = 31, yend = Temp), linetype = 2, colour = 'grey') + 
+  geom_point(size = 2) + 
+  geom_text(aes(x = 31.1, label = Month), hjust = 0) + 
+  transition_reveal(Day) + 
+  coord_cartesian(clip = 'off') + 
+  labs(title = 'Temperature in New York', y = 'Temperature (°F)') + 
+  theme_minimal() + 
+  theme(plot.margin = margin(5.5, 40, 5.5, 5.5))
