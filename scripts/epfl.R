@@ -44,6 +44,20 @@ lapply(packages, library, character.only = TRUE)
 
 lapply(packages, library, character.only = TRUE)
 
+
+# datasets ----------------------------------------------------------------
+
+stones_data <- read_csv("data/rolling_stones.csv")
+sales_report <- read_tsv("data/sales_data.tsv", skip = 3)
+sales_xls <- read_excel("data/sales_data_sample.xlsx", sheet = 2, skip = 2) |> 
+  clean_names()
+#Project_1
+survey <- read_csv("projects/project_1/data/survey.csv")
+
+#Data Visualisation
+airbnb_raw <- read_csv("data/airbnb_texas_rental.csv")
+
+
 # For encryption: ---------------------------------------------------------
 library(digest)
 library(encryptr) #devtools::install_github("SurgicalInformatics/encryptr")
@@ -1103,3 +1117,289 @@ now_tomorrow <- function() {
 }
 
 now_tomorrow()
+
+
+# functions with arguments ------------------------------------------------
+
+now_tomorrow <- function() {
+  lubridate::now() + lubridate::days(1)
+}
+
+now_in_2_days <- function() {
+  lubridate::now() + lubridate::days(2)
+}
+
+now_in_3_days <- function() {
+  lubridate::now() + lubridate::days(3)
+}
+
+now_in_d_days <- function(d) {
+  lubridate::now() + lubridate::days(d)
+}
+
+now_in_d_days(10)
+
+now_in_future <- function(d, y) {
+  lubridate::now() + lubridate::days(d) + lubridate::years(y)
+}
+
+now_in_future(0,1)
+
+#defining default argumentS:
+now_in_future_w_default <- function(d=2, y=12) {
+  lubridate::now() + lubridate::days(d) + lubridate::years(y)
+}
+
+now_in_future_w_default() 
+
+#when the functions is called the last calculated argument is returned:
+now_in_future_test <- function(d=2, y=12) {
+  lubridate::now() + lubridate::days(d) + lubridate::years(y)
+  1
+}
+
+now_in_future_test()
+
+now_in_future_w_default <- function(d=2, y=12) {
+  print(lubridate::now() +
+          lubridate::days(d) + 
+          lubridate::years(y))
+  1
+}
+
+d_day <- now_in_future_w_default() #Only the last value is returned, so that is what is saved in the variable d_day.
+#But the rest of the code is still executed: it is not skipped. So if you make it visible, it will be.
+d_day
+
+#This happens as there are two exeptions:
+#If you call the function and don't assign/use its result (i.e. returned value), it is printed to the Console. 
+#That is like the default action for unused values.
+#and
+#If you use the function print(<some-code>) anywhere in your function code, which means "Write this value in the Console".
+
+my_data <- tibble(
+  date_name = c("first date", "second date"),
+  number_of_days = c(23, 12)
+)
+
+my_data %>%
+  mutate(date_in_the_future = now_in_d_days(number_of_days))
+#this has two advantageS:
+#It keeps the main pipeline cleaner, shorter and easier to read
+#If you need to reuse a set of transformations in multiple places, you only write it once
+
+my_text_processing_function <- function(txt) {
+  txt %>%
+    str_to_lower() %>% #first put everything in lowercase
+    str_replace_all(",", "-") %>% #replace all the commas (,) with dashes (-)
+    str_c(".") %>% #add a dot (.) at the end of the string
+    str_to_sentence() #change the first letter back to uppercase
+}
+
+my_text_processing_function("This, is, an example, text")
+
+#objects defined within a function cannot be used outside of it
+important_date <- lubridate::ymd("2011-01-04")
+important_plus_days <- function(d=2) {
+  critical_date <- important_date + lubridate::days(d)
+}
+
+print(important_plus_days())
+critical_date
+
+#the following works
+important_date <- lubridate::ymd("2011-01-04")
+important_plus_days <- function(d=2) {
+  critical_date <- important_date + lubridate::days(d)
+  critical_date
+}
+important_plus_days()
+
+#its better to assign results of a function outside of a function
+important_date <- lubridate::now()
+important_plus_days <- function(d=2) {
+  important_date + lubridate::days(d)
+}
+critical_date <- important_plus_days()
+critical_date
+
+
+important_date <- lubridate::ymd("2011-01-04")
+important_plus_days <- function(d=2) {
+  important_date <- lubridate::now()
+  print(important_date)
+}
+important_plus_days() # Calling the function will not overwrite the variable outside of the function
+important_date # Calling the variable 
+
+source("name.R") #to source the functions writen in a separate R file
+
+
+# Data Visualisation ------------------------------------------------------
+# Once you have a theme that you like, even if it takes 20 lines of code, 
+# it is easy to save in a variable (i.e. in a function) and reuse everywhere.
+
+airbnb_raw <- read_csv("data/airbnb_texas_rental.csv")
+glimpse(airbnb_raw)
+
+airbnb_raw |> 
+  dplyr::distinct(bedrooms_count)
+
+airbnb <- airbnb_raw |> 
+  mutate(
+    date_of_listing = my(date_of_listing),
+    bedrooms_count = case_when(
+      bedrooms_count == "Studio" ~ 0.5,
+      is.na(bedrooms_count) ~ 0,
+      .default = as.numeric(bedrooms_count)),
+    average_rate_per_night = as.numeric(str_replace(average_rate_per_night, "\\$",""))
+  ) 
+
+#number of values
+airbnb_raw %>%
+  pull(average_rate_per_night) %>%
+  unique %>%
+  length
+
+
+ggplot()
+
+ggplot(data=airbnb, 
+       mapping=aes(x=bedrooms_count, y=average_rate_per_night)) +
+  geom_jitter() +
+  labs(title="Rate per night vs number of bedrooms",
+       subtitle="More rooms isn't always more expensive",
+       caption="Data from AirBNB",
+       x="Bedrooms count", y="Average rate per night")
+
+listings_per_day <- airbnb %>%
+  arrange(date_of_listing) %>%
+  group_by(date_of_listing) %>%
+  summarise(listings_count = n()) %>%
+  ungroup() %>%
+  mutate(cum_number_of_listings = cumsum(listings_count))
+
+listings_per_day %>%
+  ggplot(mapping=aes(x=date_of_listing, 
+                     y=cum_number_of_listings)) +
+  geom_line() 
+
+#per city
+listings_per_day_per_city <- airbnb %>%
+  group_by(date_of_listing, city) %>%
+  summarise(listings_count = n()) %>%
+  ungroup() %>%
+  arrange(date_of_listing) %>%
+  group_by(city) %>%
+  mutate(cum_number_of_listings = cumsum(listings_count)) %>%
+  ungroup()
+
+listings_per_day_per_city %>%
+  ggplot(mapping=aes(x=date_of_listing, 
+                     y=cum_number_of_listings)) +
+  geom_line(aes(group=city, color=city)) +
+  theme(legend.position = 'none')
+
+listings_per_city <- airbnb %>%
+  group_by(city) %>%
+  summarise(number_of_listings = n()) 
+
+listings_per_city %>%
+  arrange(desc(number_of_listings)) %>%
+  head(5) %>%
+  ggplot(mapping=aes(x=city, 
+                     y=number_of_listings)) +
+  geom_bar(stat="identity") #if you remove stat all the bars will be of height 1, since the tibble has only one row per city.
+
+airbnb %>%
+  ggplot(aes(x="1", y=average_rate_per_night)) +
+  geom_point(alpha=0.01)
+
+airbnb %>%
+  ggplot(aes(x="1", y=average_rate_per_night)) +
+  geom_jitter(alpha=0.01)
+
+
+glimpse(listings_per_city)
+
+top_6 <- airbnb %>% 
+  count(city) %>% 
+  arrange(desc(n)) %>% 
+  head(6) %>% 
+  pull(city)
+
+airbnb %>% 
+  filter(city %in% top_6) %>%  
+  ggplot(mapping=aes(x=city, y=average_rate_per_night)) +
+  geom_jitter(alpha=0.2)
+
+top_cities <- airbnb |> 
+  count(city) |> 
+  arrange(desc(n)) |> 
+  head(5) |> 
+  pull(city)
+
+airbnb |> 
+  filter(city %in% top_cities) |> 
+  ggplot(aes(x = city, y = average_rate_per_night)) +
+  geom_jitter(alpha = 0.4, colour = "darkblue")
+
+airbnb |> 
+  filter(city %in% top_5,
+         average_rate_per_night < 200) |>
+  ggplot(aes(x = average_rate_per_night, fill = city)) +
+  geom_density(alpha = 0.2) + 
+  theme_minimal() 
+
+airbnb |> 
+  filter(city %in% top_6,
+         average_rate_per_night < 200) |>
+  ggplot(aes(x = average_rate_per_night, fill = city)) +
+  geom_density(alpha = 0.2) + 
+  theme_minimal() +
+  facet_wrap(vars(city),nrow = 3)
+
+airbnb |> 
+  filter(city %in% top_6,
+         average_rate_per_night < 200) |>
+  ggplot(aes(x = average_rate_per_night, fill = city)) +
+  geom_density(alpha = 0.2) + 
+  theme_minimal() +
+  facet_grid(vars(city)) +
+  labs(caption = "Wohnungen nach Eigentumsart und statistischer Zone seit 2009.") +
+  theme(legend.position = 'none')
+
+sales_xls %>% 
+  ggplot(aes(x = quantity_ordered, y = price_each)) + 
+  geom_point() + 
+  facet_grid(rows = vars(territory), 
+             cols = vars(dealsize))
+
+sales_xls %>%  
+  ggplot(aes(x=quantity_ordered, y=sales)) +
+  geom_point(mapping=aes(color=dealsize), alpha=0.3)
+
+
+#way to map the outliers 
+sales_xls %>%  
+  ggplot(aes(x=quantity_ordered, y=sales)) +
+  geom_point(mapping=aes(color=dealsize), alpha=0.3) +
+  geom_point(data=filter(sales_xls, territory=="APAC",
+                         status=="Disputed"),
+             shape=1, size=4, stroke=1, color="red")
+
+
+# Data Visualisation - annotations ----------------------------------------
+
+avg_sales_by_dealsize <- sales_xls %>% 
+  group_by(dealsize) %>%
+  summarise(avg_quantity_ordered = mean(quantity_ordered),
+            avg_sale = mean(sales)) %>%
+  ungroup()
+
+# chart with geom_point()
+avg_sales_by_dealsize %>%
+  ggplot(aes(x=avg_quantity_ordered, y=avg_sale)) +
+  geom_point() +
+  geom_text(aes(label=dealsize), nudge_y = 300)
+
