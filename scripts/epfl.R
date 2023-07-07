@@ -1536,3 +1536,90 @@ ggplot(airq, aes(Day, Temp, group = Month)) +
   theme_minimal() + 
   theme(plot.margin = margin(5.5, 40, 5.5, 5.5))
 
+# Analysis ----------------------------------------------------------------
+# ASK - formulate a specific questions to be answered
+# COLLECT - obtain necessary data to answer the question
+# CLEAN - clean the data i.e. missing values / outliers
+# EXPLORE - examine and plot the data first 
+# ANALYSE - here is where you identify links between variables
+# COMMUNICATE - present and answer initial questions
+
+# Descriptive Analysis
+# central tendency: do the values in your data cluster around a central value? (mean, median, mode)
+# spread: how much variability is there in the values? (variance, SD)
+# tails: how does the part of the data far away from the central value behave?
+# outliers: are there any extreme values in the data? (min, max)
+
+# Inferential Analysis - draw conclusions about population using a sample data from that population
+# Predictive Analysis - predict a future outcome using historical data 
+
+salary_data <- read_csv("data/salary_data.csv")
+
+#plotting distribution
+ggplot(salary_data, mapping = aes(x = city, y = salary)) +
+  geom_boxplot()
+
+ggplot(salary_data, mapping = aes(x = salary)) +
+  geom_histogram() +
+  facet_wrap(~ city)
+
+
+# central tendency (mean/median/mode) -------------------------------------
+# 
+library(skimr)
+
+skim(salary_data)
+
+salary_data |> 
+  group_by(city) |> 
+  skim()
+
+salary_data %>%
+  group_by(city) %>%
+  summarise(median_salary = median(salary))
+
+#mode - most often occuring data element
+
+salary_data %>%
+  count(salary, sort = TRUE)
+
+#filter for max
+salary_data %>%
+  count(salary, sort = TRUE) |> 
+  filter(n == max(n))
+
+ggplot(salary_data, mapping = aes(x = salary)) +
+  geom_histogram() +
+  geom_vline(data = salary_data %>%
+               summarize(mean = mean(salary), median = median(salary)) %>%
+               gather(stat, value, mean, median),
+             mapping = aes(xintercept = value, colour = stat))
+
+
+# spread (min, max, range, IQR, Variance, SD) ------------------------------------------------
+
+salary_data %>%
+  summarise(min_salary = min(salary),
+            max_salary = max(salary),
+            range_salary = max_salary - min_salary)
+
+#So, we can see that a boxplot communicates: 
+#Central tendency (i.e. the median)
+#spread (i.e. the interquartile range and the lines representing 1.5 time 
+#the interquartile range away from the box), and extreme values. Quite a useful type of plot!
+
+salary_data %>%
+  summarise(q1 = quantile(salary, 0.25),
+            q2 = quantile(salary, 0.5),
+            q3 = quantile(salary, 0.75))
+
+#The variance is intended to capture how closely the points are concentrated around their mean value.
+#If the variance is high, the data is spread out widely. 
+#If the variance is low, the data is closely concentrated around its mean value.
+#The standard deviation is no more than the squareroot of the variance - and is used more often than Variance. 
+
+salary_data %>%
+  group_by(city) %>%
+  summarise(variance_salary = var(salary),
+            sd_salary = sd(salary))
+
