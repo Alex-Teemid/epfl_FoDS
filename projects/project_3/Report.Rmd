@@ -1,0 +1,134 @@
+---
+title: "Fitness Club"
+output: html_notebook
+---
+
+```{r setup}
+library(tidyverse)
+library(here)
+```
+
+```{r get data}
+members <- read_csv(here("projects/project_3/data/fitness_members.csv")) |> 
+  as_tibble()
+tracking <- read_csv(here("projects/project_3/data/fitness_tracking.csv")) |> 
+  as_tibble()
+  
+```
+
+##Fitness Club Report
+
+The owners of a Fitness Club would like to get an overview of their club members, and perform some analyses of the data they collect on a regular basis.
+"Who are our members ?"
+
+
+##Q.1 
+A simple R function from the {janitor} package could be used to answer the question "What is the proportion of female and male Fitness Club members ?". Do you remember this function ? With this function, we get the following output in R:
+
+```{r}
+fitness_members %>% tabyl(gender) %>% adorn_pct_formatting(digits = 1)
+```
+##Q.2
+How many successful recommendations were made by each member ?
+```{r recommendations}
+recommendations <- members |> 
+  filter(recommendation_from != "NA") |> 
+  count(is.na(recommendation_from))
+
+recommendations
+```
+
+```{r single member}
+members |> 
+   count(recommendation_from) |> 
+  filter(recommendation_from == "000115") 
+```
+
+```{r max recommendation}
+members |> 
+  count(recommendation_from) |> 
+  filter(recommendation_from != "NA") |> 
+  summarise(max = max(n))
+```
+
+```{r highest member}
+members |> 
+  count(recommendation_from) |> 
+  filter(recommendation_from != "NA") |> 
+  arrange(desc(n))
+```
+
+
+How many female members in the Premium membership category made one or more successful recommendations ?
+```{r}
+recommenders <- members |> 
+  filter(gender =="F", m_category == "Premium", recommendation_from != "NA") |> 
+  distinct(recommendation_from)
+
+ids <- as_factor(recommenders$recommendation_from)
+
+members |> 
+  filter(id == ids)
+```
+
+```{r BMI index}
+
+members |> 
+  mutate(bmi = weight/(height/100)^2) |> 
+  filter(id == "000042") |> 
+  View()
+
+
+```
+
+```{r tranform tracking}
+tracking_long <- tracking |> 
+  pivot_longer(cols = !id, names_to = "weeks", values_drop_na = TRUE) 
+
+members_weight <- members |> 
+  select(id,weight) |> 
+  mutate(weeks = "wk_000") 
+
+tracking_full <- tracking_long |> 
+  rename(weight = value) |> 
+  bind_rows(members_weight) |> 
+  arrange(id, weeks) 
+
+```
+
+
+```{r}
+members_ids <- members$id
+tracking_ids <- tracking$id
+
+members |> 
+  filter(id != tracking_ids) 
+
+```
+```{r}
+tracking |> 
+  filter(id %in% c("000417", "000418","000419", "000420"))
+```
+Use the data set fitness_tracking_long to compute weekly BMI values for each member. Again, a very useful function from the tidyverse package can help you here.
+
+What is the BMI value of member 000024 at week 11 ?
+```{r Part9}
+
+members |> 
+  select(-weight) |> 
+  right_join(tracking_full, by = "id") |> 
+  mutate(bmi = weight/(height/100)^2) |> 
+  filter(id == "000024", weeks == "wk_011") |> 
+  View()
+
+```
+
+```{r Part10}
+members |> 
+  select(-weight) |> 
+  right_join(tracking_full, by = "id") |> 
+  mutate(bmi = weight/(height/100)^2) |> 
+  mutate(bmi_change = weight/lag(weight)-1) |> 
+  filter(id == "000015")
+```
+
