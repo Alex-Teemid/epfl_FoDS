@@ -48,8 +48,7 @@ packages <- c(
 
 lapply(packages, library, character.only = TRUE)
 
-lapply(packages, library, character.only = TRUE)
-
+lapply(packages, library, character.only= TRUE)
 
 # datasets ----------------------------------------------------------------
 
@@ -69,11 +68,13 @@ library(digest)
 library(encryptr) #devtools::install_github("SurgicalInformatics/encryptr")
 
 
+# For logging the steps of the work ---------------------------------------
 install.packages("tidylog")
 library(tidylog)
 
 install.packages("ViewPipeSteps")
 library(ViewPipeSteps)
+
 
 
 sessionInfo()
@@ -102,6 +103,7 @@ toupper(substring("50 things you should know about data",
 
 lubridate::now(tzone = "EST")
 ?now()
+
 #tabbing package
 lubridate:: #press tab to go through available functions 
   
@@ -114,7 +116,7 @@ str_glue("Hello my name is {first_name} {last_name}")
 ?str_glue
 library(stringr)
 
-
+glimpse(mtcars)
 mtcars %>% str_glue_data("{rownames(.)} has {hp} hp") #use in automation of reporting
 mtcars
 
@@ -431,6 +433,7 @@ arrange(iris_tibble, Petal.Width, Petal.Length)
 
 first_day <- seq(as.Date("1910/1/1"), as.Date("1920/1/1"), "years")
 desc(first_day)
+first_day
 
 arrange(sales_report, desc(quantity))
 
@@ -635,7 +638,7 @@ ggplot(data = n_of_order_per_continent,
 
 # Wide & long data --------------------------------------------------------
 
-survey <- read_csv("projects/project_1/data/survey.csv")
+survey_data <- read_csv("projects/project_1/data/survey.csv")
 
 survey_data |> 
   ggplot(aes(x = id, fill = position)) +
@@ -1077,6 +1080,8 @@ for(name in tennis_data_lower$full_name) {
   digests_of_name <- append(digests_of_name, digest(name)) 
 }
 
+digests_of_name
+
 # Once our job is done with the for loop, we can restart the pipeline
 tennis_data_lower %>%
   mutate(hashed_name = digests_of_name) %>% # give to mutate our newly created vector
@@ -1094,6 +1099,8 @@ tennis_data %>%
   mutate(anonymized_name = map(full_name, digest)) |> 
   unnest(anonymized_name)
 
+
+# lead & lag --------------------------------------------------------------
 sales_report |> 
   arrange(country, order_date) |> 
   group_by(country) |> 
@@ -1166,12 +1173,15 @@ now_in_future_test <- function(d=2, y=12) {
 
 now_in_future_test()
 
+#you need to explicitly print
 now_in_future_w_default <- function(d=2, y=12) {
   print(lubridate::now() +
           lubridate::days(d) + 
           lubridate::years(y))
   1
 }
+
+now_in_future_w_default()
 
 d_day <- now_in_future_w_default() #Only the last value is returned, so that is what is saved in the variable d_day.
 #But the rest of the code is still executed: it is not skipped. So if you make it visible, it will be.
@@ -1278,6 +1288,7 @@ ggplot(data=airbnb,
        caption="Data from AirBNB",
        x="Bedrooms count", y="Average rate per night")
 
+# cumulative listings
 listings_per_day <- airbnb %>%
   arrange(date_of_listing) %>%
   group_by(date_of_listing) %>%
@@ -1524,3 +1535,4 @@ ggplot(airq, aes(Day, Temp, group = Month)) +
   labs(title = 'Temperature in New York', y = 'Temperature (°F)') + 
   theme_minimal() + 
   theme(plot.margin = margin(5.5, 40, 5.5, 5.5))
+
