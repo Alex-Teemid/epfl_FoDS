@@ -1,5 +1,6 @@
 install.packages(c(
   "gifski",
+  "png"
   "gganimate",
   "tidyverse",
   "rmarkdown",
@@ -24,6 +25,7 @@ install.packages(c(
 
 packages <- c(
   "gifski",
+  "png",
   "gganimate",
   "tidyverse",
   "rmarkdown",
@@ -61,6 +63,13 @@ survey <- read_csv("projects/project_1/data/survey.csv")
 
 #Data Visualisation
 airbnb_raw <- read_csv("data/airbnb_texas_rental.csv")
+
+
+#Project_3
+fitness_members <- read_csv(here("projects/project_3/data/fitness_members.csv")) |> 
+  as_tibble()
+fitness_tracking <- read_csv(here("projects/project_3/data/fitness_tracking.csv")) |> 
+  as_tibble()
 
 
 # For encryption: ---------------------------------------------------------
@@ -1535,4 +1544,459 @@ ggplot(airq, aes(Day, Temp, group = Month)) +
   labs(title = 'Temperature in New York', y = 'Temperature (°F)') + 
   theme_minimal() + 
   theme(plot.margin = margin(5.5, 40, 5.5, 5.5))
+
+# Analysis ----------------------------------------------------------------
+# ASK - formulate a specific questions to be answered
+# COLLECT - obtain necessary data to answer the question
+# CLEAN - clean the data i.e. missing values / outliers
+# EXPLORE - examine and plot the data first 
+# ANALYSE - here is where you identify links between variables
+# COMMUNICATE - present and answer initial questions
+
+# Descriptive Analysis
+# central tendency: do the values in your data cluster around a central value? (mean, median, mode)
+# spread: how much variability is there in the values? (variance, SD)
+# tails: how does the part of the data far away from the central value behave?
+# outliers: are there any extreme values in the data? (min, max)
+
+# Inferential Analysis - draw conclusions about population using a sample data from that population
+# Predictive Analysis - predict a future outcome using historical data 
+
+salary_data <- read_csv("data/salary_data.csv")
+
+#plotting distribution
+ggplot(salary_data, mapping = aes(x = city, y = salary)) +
+  geom_boxplot()
+
+ggplot(salary_data, mapping = aes(x = salary)) +
+  geom_histogram() +
+  facet_wrap(~ city)
+
+
+# central tendency (mean/median/mode) -------------------------------------
+# 
+library(skimr)
+
+skim(salary_data)
+
+salary_data |> 
+  group_by(city) |> 
+  skim()
+
+salary_data %>%
+  group_by(city) %>%
+  summarise(median_salary = median(salary))
+
+#mode - most often occuring data element
+
+salary_data %>%
+  count(salary, sort = TRUE)
+
+#filter for max
+salary_data %>%
+  count(salary, sort = TRUE) |> 
+  filter(n == max(n))
+
+ggplot(salary_data, mapping = aes(x = salary)) +
+  geom_histogram() +
+  geom_vline(data = salary_data %>%
+               summarize(mean = mean(salary), median = median(salary)) %>%
+               gather(stat, value, mean, median),
+             mapping = aes(xintercept = value, colour = stat))
+
+
+# spread (min, max, range, IQR, Variance, SD) ------------------------------------------------
+
+salary_data %>%
+  summarise(min_salary = min(salary),
+            max_salary = max(salary),
+            range_salary = max_salary - min_salary)
+
+#So, we can see that a boxplot communicates: 
+#Central tendency (i.e. the median)
+#spread (i.e. the interquartile range and the lines representing 1.5 time 
+#the interquartile range away from the box), and extreme values. Quite a useful type of plot!
+
+salary_data %>%
+  summarise(q1 = quantile(salary, 0.25),
+            q2 = quantile(salary, 0.5),
+            q3 = quantile(salary, 0.75))
+
+#The variance is intended to capture how closely the points are concentrated around their mean value.
+#If the variance is high, the data is spread out widely. 
+#If the variance is low, the data is closely concentrated around its mean value.
+#The standard deviation is no more than the squareroot of the variance - and is used more often than Variance. 
+
+salary_data %>%
+  group_by(city) %>%
+  summarise(variance_salary = var(salary),
+            sd_salary = sd(salary))
+
+### Question : What is the distribution of member weights at week 0, when they register to the Fitness Club ?
+### Recommendation 1 : Do a Histogram
+fitness_members %>% ggplot(aes(x = weight)) +
+  geom_histogram(aes(y = ..density..),
+                 bins = 20,
+                 colour = "black",
+                 fill = "purple",
+                 alpha = 0.1) +
+  geom_density(lwd = 1, colour = "purple",
+               fill = "purple", alpha = 0.3)+
+  labs(title = "Weight at week 0",
+       caption = "Fitness Club The Good Fit",
+       x = "Weight (kg)",
+       y = "Relative Frequency") +
+  theme_minimal() 
+
+#Regarding the number of bins, it is recommended to take bins the square root of the number of observations.
+
+fitness_members |> 
+  count() |> 
+  sqrt()
+
+sqrt(420)
+
+### Recommendation 2 : Do a Boxplot
+### Boxplot - it is recommended to plot the data along the boxplot
+
+fitness_members %>% ggplot(aes(x = "", y = weight)) +
+  geom_point(size = 5, alpha = 0.05, col = "purple") + #plotting the data
+  geom_boxplot(alpha = 0.1, fill = "purple") +
+  labs(title = "Weight at week 0",
+       caption = "Fitness Club The Good Fit",
+       x = "All members",
+       y = "Weight (kg)") +
+  coord_flip() +
+  theme_minimal()
+
+
+### Question : Is there a big difference between the number of members
+###  in the Premium category compared to the other categories Economic and Balance ?
+###  Recommendation 1 : Do a Barplot - one non-continuous variable
+mcategory_data <- fitness_members %>%
+  count(m_category, name = "frequency")
+
+mcategory_data %>% ggplot(aes(x = m_category, y = frequency, fill = m_category)) +
+  geom_col(alpha = 0.7) +
+  labs(title = "Membership categories",
+       caption = "Fitness Club The Good Fit",
+       x = "Membership category",
+       y = "Frequency") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+### Question : Can we observe a strong relationship between weight and height ?
+### Recommendation : Do a Scatterplot
+
+fitness_members %>% ggplot(aes(x = height, y = weight)) +
+  geom_point(colour = "purple",
+             size = 4,
+             alpha = 0.5) +
+  labs(title = "Weight vs. Height at week 0",
+       caption = "Fitness Club The Good Fit",
+       x = "Height (cm)",
+       y = "Weight (kg)") +
+  theme_minimal()
+
+### Question : Can we visualise for any specific member the evolution of weight through the first 12 weeks ?
+### Recommendation : Do a Lineplot
+
+fitness_tracking_long %>%
+  filter(id %in% c("000001", "000002", "000003", "000004"),
+         week_nb <= 12) %>%
+  ggplot(aes(x = week_nb, y = weight, colour = id)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "Weight vs. Week",
+       caption = "Fitness Club The Good Fit",
+       x = "Week",
+       y = "Weight (kg)",
+       colour = "Member id") +
+  scale_x_continuous(breaks = 0:12) +
+  theme_minimal()
+
+### Question : At week 0, corresponding to registration to the Fitness Club, how different is the distribution 
+### of weights for female fitness members compared to male fitness members ?
+### Recommendation 1 : Do a Histogram by Gender
+
+fitness_members %>% ggplot(aes(x = weight)) +
+  geom_histogram(aes(y = ..density..),
+                 bins = 14,
+                 colour = "black",
+                 fill = "purple",
+                 alpha = .3) +
+  geom_density() +
+  labs(title = "Weight at week 0 by Gender",
+       caption = "Fitness Club The Good Fit",
+       x = "Weight (kg)",
+       y = "Relative Frequency") +
+  facet_wrap(vars(gender), ncol = 1) +
+  theme_minimal()
+
+### Recommendation 2 : Do a Boxplot by Gender
+fitness_members %>% ggplot(aes(x = gender, y = weight)) +
+  geom_point(size = 5, alpha = 0.05, col = "purple") +
+  geom_boxplot(alpha = 0.1, fill = "purple") +
+  labs(title = "Weight at week 0",
+       caption = "Fitness Club The Good Fit",
+       x = "Gender",
+       y = "Weight (kg)") +
+  coord_flip() +
+  theme_minimal()
+
+### Question : When we compare the number of members in the Premium category to the other categories 
+### Economic and Balance, do we observe a similar pattern for female and male fitness members ?
+### Recommendation 1 : Do a Barplot by Gender
+
+mcategory_data <- fitness_members %>%
+  count(m_category, gender, name = "frequency")
+
+mcategory_data %>% ggplot(aes(x = m_category, y = frequency, fill = m_category)) +
+  geom_col(alpha = 0.7) +
+  labs(title = "Membership categories by Gender",
+       caption = "Fitness Club The Good Fit",
+       x = "Membership category",
+       y = "Frequency") +
+  facet_wrap(vars(gender), ncol = 1) +
+  theme_minimal() +
+  theme(legend.position = "none") 
+
+### Recommendation 2 : Do a Heatmap
+mcategory_data <- fitness_members %>%
+  count(gender, m_category, name = "frequency") %>%
+  group_by(gender) %>%
+  mutate(relative_frequency = round(100*frequency/sum(frequency)))
+
+mcategory_data %>% ggplot(aes(x = m_category, y = gender)) +
+  geom_tile(aes(fill = relative_frequency)) +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  labs(title = "Membership categories by Gender",
+       subtitle = "Fitness Club The Good Fit",
+       x = "Membership category",
+       y = "Gender",
+       fill = "% by Gender")
+
+# Dealing with missing values ---------------------------------------------
+# Imputation techniques
+# We recommend using the median as a default, 
+# but if you think it makes sense for your data you may choose to use the average or even the mode.
+# Using the median will avoid the influence of outlier data on the substitute value.
+visdat::vis_dat(fitness_members)
+visdat::vis_miss(fitness_members)
+
+skimr::skim(fitness_members)
+
+fitness_members %>%
+  summarise(count = sum(is.na(recommendation_from)))
+
+fitness_members %>%
+  mutate(weight = replace(weight, is.na(weight), median(weight, na.rm = TRUE)))
+  #replacing NA with median weight
+
+#weighted correction by gender as the weight data is differently distributed for those groups
+weight_corrected <- fitness_members %>%
+  group_by(gender) %>%
+  mutate(weight = replace(weight, is.na(weight), median(weight, na.rm = TRUE))) %>%
+  ungroup()
+
+weight_corrected
+
+
+#dealing with columns that have character "NAs"
+weight_corrected <- weight_corrected %>%
+  mutate(height = as.numeric(height))
+
+weight_corrected %>%
+  filter(is.na(height)) # Filter for just the NA height values
+
+# For correction of height a more sophisticated method than imputing the median is needed
+#We can perform a regression analysis on our fitness_members data to determine this 
+#correlation from the data in the table. Below is a visualization of the correlation 
+#between height and weight for the fitness members.
+# we could use this correlation to predict the missing height values from their corresponding weight values. 
+
+#last observation carry forward 
+order_data_missing_deal_sizes %>%
+  fill(deal_size)
+
+#changing the direction of the fill
+cleaned_memberships <- weight_corrected %>%
+  mutate(id = as.numeric(id)) %>% # convert id from character to numeric
+  fill(registration_date, .direction = "up") # "up" == next observation carry backward
+
+# Relations between variables: foundations --------------------------------
+# Statistical inference
+# Now, before we move on, it is important to note that there are different ways of thinking 
+# about hypothesis testing in statistics. The classical (and by far the most prominent) approach 
+# taken is frequentist inference. However, increasingly, people are also using another framework, 
+# known as Bayesian inference.
+
+# Hypothesis testing: The frequentist way ---------------------------------
+# Essentially hypothesis testing is concerned with answering the following question:
+#  Does the data support my claim or could the data occur just by chance?
+
+#  Now, in frequentist statistics, we would formulate the following hypothesis to test this:
+#  Assuming that our claim is false, how likely is it that we would get a sample mean difference 
+#  between the two breeds of cows?
+#  There is a special term in frequentist statistics for the statement negating our claim: 
+#  it is called the null hypothesis, or the devil's advocate. In our case the null hypothesis is:
+#  Null hypothesis: both breeds of cows have the same population mean.
+
+# The null hypothesis is the statement that we try to reject. Now hypothesis testing is concerned 
+# with the following question:
+# Hypothesis testing: how probable is it to obtain our sample statistic or something more extreme
+# if the null hypothesis is true? In this case, that means: how probable is it that there is a 
+# sample mean difference if in the population there is, in fact, no difference?
+
+#If we can show that this is very improbable then we can reject the null hypothesis with high confidence 
+#and therefore accept our original claim.
+#In frequentist statistics, we tend to use cut-off points. Say we have a cut-off point of 5%.
+
+head(cars)
+glimpse(cars)
+
+cars |> 
+  ggplot(aes(x = speed, y = dist)) +
+  geom_point() +
+  geom_smooth(method = "loess")
+
+cars |> 
+  select(speed, dist) |> 
+  cor()
+
+iris %>%
+  select(-Species) %>%
+  cor()
+
+unique(iris$Species)
+
+iris |> 
+  filter(Species != "virginica") |> 
+  group_by(Species) |> 
+  skim()
+
+iris |> 
+   
+  ggplot(aes(x = Species, y = Petal.Length)) +
+  geom_boxplot()
+
+#In the case of t-tests these assumptions are that
+#the data comes from two independent groups
+#the data from the two groups needs to be normally distributed
+#the variance of both groups needs to be approximately equal
+
+#check the data if this satisfies the t-test
+#two groups are different plants
+#they are farily normally distributed 
+iris %>%
+  filter(Species != "virginica") |> 
+  ggplot(mapping = aes(x = Petal.Length, fill = Species)) +
+  geom_histogram(colour = "black") +
+  theme_minimal()
+
+#the variance is not met as the variances (distribution is wider in case of versicolor)
+#using t-test to test group differences:
+
+library(infer)
+
+iris |> 
+  filter(Species != "virginica") |>
+  t_test(Petal.Length ~ Species,
+         order = c("versicolor", "setosa"),
+         var.equal = FALSE)
+
+#contingencty table for categorical variables
+mcategory_data <- fitness_members %>%
+  count(m_category, gender, name = "frequency")
+
+mcategory_data %>% ggplot(aes(x = m_category, y = frequency, fill = m_category)) +
+  geom_col(alpha = 0.7) +
+  labs(title = "Membership categories by Gender",
+       caption = "Fitness Club The Good Fit",
+       x = "Membership category",
+       y = "Frequency") +
+  facet_wrap(vars(gender), ncol = 1) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+#testing if the relationship between two categorical variables is not based purely on chance
+#using Chi-Squared Test
+
+#For the fitness data example here above, the chi-squared test will provide a measure of dependency 
+#between the two categorical variables gender and membership category. A high value of this measure 
+#(called chi-squared statistic) will indicate that the frequency distribution of membership categories 
+#highly depends on gender, and consequently that there is a strong relationship between 
+#the two categorical variables.
+
+
+# Linear regression -------------------------------------------------------
+cars %>% ggplot(aes(x = speed, y = dist)) +
+  geom_point(size = 2,
+             colour = "darkorange",
+             alpha = 0.7) +
+  xlim(0, 25) +
+  ylim(0, 120) +
+  labs(title = "Stopping distance vs. Speed",
+       x = "Speed (mph)",
+       y = "Stopping distance (ft)") +
+  theme_minimal()
+
+#model
+cars_fit <- lm(dist ~ speed, data = cars)
+coef(cars_fit)
+
+#leveraging geom_smooth
+cars %>% ggplot(aes(x = speed, y = dist)) +
+  geom_smooth(method='lm', formula = y ~ x, se = FALSE) +
+  geom_point(size = 4,
+             colour = "darkorange",
+             alpha = 0.7) +
+  xlim(0, 25) +
+  ylim(0, 120) +
+  labs(title = "Stopping distance vs. Speed",
+       subtitle = "+ Regression line",
+       x = "Speed (mph)",
+       y = "Stopping distance (ft)") +
+  theme_minimal()
+
+# The negative intercept b = -17.579095 means that when speed is 0 mph, we have a stopping distance 
+# of about -17.6 ft. That is rather unrealistic, don't you think ? One way to avoid this result 
+# would be to force the regression line to have a zero intercept value:
+cars_fit_wo_intercept <- lm(dist ~ -1 + speed, data = cars)
+coef(cars_fit_wo_intercept)
+
+cars %>% ggplot(aes(x = speed, y = dist)) +
+  geom_smooth(method='lm', formula = y ~ -1 + x, se = FALSE) +
+  geom_point(size = 4,
+             colour = "darkorange",
+             alpha = 0.7) +
+  xlim(0, 25) +
+  ylim(0, 120) +
+  labs(title = "Stopping distance vs. Speed",
+       subtitle = "+ Regression line with zero-intercept",
+       x = "Speed (mph)",
+       y = "Stopping distance (ft)") +
+  theme_minimal()
+
+#correcting the model using formula stopping distance = slope * speed^2
+cars_fit2 <- lm(dist ~ -1 + I(speed^2), data = cars)
+coef(cars_fit2)
+
+cars %>% ggplot(aes(x = speed, y = dist)) +
+  geom_smooth(method='lm', formula = y ~ -1 + I(x^2), se = FALSE) +
+  geom_point(size = 4,
+             colour = "darkorange",
+             alpha = 0.7) +
+  xlim(0, 25) +
+  ylim(0, 120) +
+  labs(title = "Stopping distance vs. Speed",
+       subtitle = "+ Quadratic curve",
+       x = "Speed (mph)",
+       y = "Stopping distance (ft)") +
+  theme_minimal()
+
+# Remember, the fitting curve linking x and y is obviously quadratic but the model 
+# y = ax^2 is linear !
+
+
 

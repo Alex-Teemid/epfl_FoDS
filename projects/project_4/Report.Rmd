@@ -1,0 +1,31 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup}
+library(tidyverse)
+library(here)
+library(skimr)
+```
+
+```{r import data}
+cows <- readr::read_csv(here::here("projects/project_4/swiss_cows_data.csv"))
+```
+#Part 2
+Perform a t-test using the first 3 cows of each breed and answer the question:
+Are Brown Swiss cows heavier than Swiss Red Holstein cows ?
+
+```{r}
+cows_03 <- cows |> 
+  filter(num <= 3)
+```
+
+```{r summary table}
+cows_03 |> 
+  group_by(breed) |> 
+  skim()
+```
+
