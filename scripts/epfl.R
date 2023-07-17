@@ -65,7 +65,7 @@ survey <- read_csv("projects/project_1/data/survey.csv")
 airbnb_raw <- read_csv("data/airbnb_texas_rental.csv")
 
 
-#Project_3
+#Project_3 
 fitness_members <- read_csv(here("projects/project_3/data/fitness_members.csv")) |> 
   as_tibble()
 fitness_tracking <- read_csv(here("projects/project_3/data/fitness_tracking.csv")) |> 
@@ -1887,7 +1887,7 @@ iris |>
 
 #check the data if this satisfies the t-test
 #two groups are different plants
-#they are farily normally distributed 
+#they are fairly normally distributed 
 iris %>%
   filter(Species != "virginica") |> 
   ggplot(mapping = aes(x = Petal.Length, fill = Species)) +
@@ -1999,4 +1999,55 @@ cars %>% ggplot(aes(x = speed, y = dist)) +
 # y = ax^2 is linear !
 
 
+# Nested Data Formats -----------------------------------------------------
+
+# A simple list of numeric
+list(1, 2, 3)
+list(1, "dog", TRUE)
+
+c(1, "dog", TRUE) #vector in this case is converted to character
+
+
+list("John", "Smith") 
+named_list <- list(first_name="John", last_name="Smith") #named list
+
+named_list$first_name
+
+list(
+  street="Avenue Repsy",
+  number=23,
+  postcode=1209,
+  city="Geneve")
+
+#nested lists - for hierarchy data:
+list(age = 56, 
+     name = list(first_name = "Peter",
+               last_name = "Pierrehumbert")) 
+
+#Subsetting with lists
+
+id_data <- list(age = 56, 
+                name = list(first_name="Peter",
+                          last_name="Pierrehumbert")) 
+id_age <- id_data[["age"]] #contains just a value a character
+vs
+id_age_2 <- id_data["age"] #contains a list equivalent to original one
+
+a_long_list <- list(
+  weather=list(temperature=list(unit="Celcius",value=14.5),
+               humidity=list(unit="Percentage",value=67)),
+  venue=list(address=list(street="34, bvd Harve", city="Zurich"),
+             name="Convention Center"),
+  speaker=list(list(first_name="Vanessa", last_name="Hornag"),
+               list(first_name="Jill", last_name="Rro"),
+               list(first_name="Steve", last_name="Gniw")))
+
+library(jsonlite)
+clients_data_json <- read_json(here::here("data/clients.json"))
+
+clients_data_json <- read_json(here::here("data/clients.json"), simplifyDataFrame=TRUE) #converting into a data frame
+clients_data_json                               
+
+client_tib <- as_tibble(clients_data_json[["data"]][["clients"]])
+client_tib
 
