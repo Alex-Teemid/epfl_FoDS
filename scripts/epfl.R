@@ -1,6 +1,9 @@
 install.packages(c(
   "gifski",
-  "png"
+  "httr",
+  "jsonlite",
+  "purrr",
+  "png",
   "gganimate",
   "tidyverse",
   "rmarkdown",
@@ -25,6 +28,9 @@ install.packages(c(
 
 packages <- c(
   "gifski",
+  "httr",
+  "jsonlite",
+  "purrr",
   "png",
   "gganimate",
   "tidyverse",
@@ -2042,6 +2048,8 @@ a_long_list <- list(
                list(first_name="Jill", last_name="Rro"),
                list(first_name="Steve", last_name="Gniw")))
 
+
+# json
 library(jsonlite)
 clients_data_json <- read_json(here::here("data/clients.json"))
 
@@ -2050,4 +2058,124 @@ clients_data_json
 
 client_tib <- as_tibble(clients_data_json[["data"]][["clients"]])
 client_tib
+
+write_json(clients_data_json, here::here("data/clients2.json"))
+
+#xml2
+library(xml2)
+clients_data <- read_xml(here::here("data/clients.xml"))
+
+clients_list <- as_list(clients_data)
+
+clients_list[["data"]][["clients"]]
+
+#using purr
+clients_list %>%
+  pluck("data", "clients")
+
+#flatten to a data frame
+clients_list %>%
+  pluck("data", "clients", 1) %>% # Adding 1 to get only the first
+  flatten_df()
+
+#example of map function
+list( c(1,2,3), c(4,2,1) ) %>%
+  map(max) #we get max in each vector 
+
+list( "hello", "bonjour", "hallo" ) %>%
+  map(str_to_upper) #we get all characters in upper case
+
+clients_list %>%
+  pluck("data", "clients") %>%
+  map(flatten_df)
+
+clients_list %>%
+  pluck("data", "clients") %>%
+  map(flatten_df) %>%
+  bind_rows() # and we have a fulld tibble that we were looking for as a result
+
+#full code below:
+read_xml(here::here("data/clients.xml")) %>%
+  as_list() %>%
+  pluck("data", "clients") %>%
+  map_df(flatten_df)
+
+#writing xml
+clients_xml <- as_xml_document(clients_list)
+write_xml(clients_xml, here::here("data/clients2.xml"))
+
+
+# APIs --------------------------------------------------------------------
+library(httr)
+library(jsonlite)
+library(purrr)
+
+geo_ip <-  httr::GET("https://ipwhois.app/json/128.179.146.244")
+httr::content(geo_ip, as = "text")
+
+geo_ip_parsed <- httr::content(geo_ip, as = "parsed")
+
+geo_ip_parsed |> 
+  pluck("city")
+
+ips <- c("85.159.237.59", "89.238.178.213", "185.216.34.220")
+
+ips <- str_c("https://ipwhois.app/json/", ips)
+
+ips |> 
+  map(GET) |> 
+  map(content, as = "parsed") |> 
+  map(pluck, "country")
+
+#writing a function
+get_country <- function(url) {
+  GET(url) %>%
+    content() %>%
+    purrr::pluck("country")
+}
+
+str_c("https://ipwhois.app/json/", ips) %>%
+  map(get_country) # using our custom function
+
+# APIs - Get latitude and longitude for any address -----------------------
+
+# an example in curl
+# https://geocode.xyz/Hauptstr.,+57632+Berzhausen?json=1
+
+# Part 1: https://geocode.xyz/
+# Part 2: address keywords separated with + signs
+# Part 3: ?json=1
+
+epfl_geo <-  httr::GET("https://geocode.xyz/epfl+lausanne+switzerland?json=1") 
+
+# R APIs
+# {tidyquant} package provides you functions to access the data from Yahoo Finance
+# {rtweet}, allows you to interact with the Twitter API 
+# {spotifyr} allows you to access Spotify data
+
+library(tidygeocoder)
+
+address_tibble <- 
+  tibble(address = c("epfl lausanne switzerland"))
+
+address_tibble %>% 
+  geocode(address)
+
+my_sport_companies <- c(
+  "nke",    # Nike
+  "ua",     # Under Armour
+  "colm",   # Columbia Sports Wear
+  "fl"      # Foot Locker
+)
+
+
+addresses <- str_glue("https://cloud.iexapis.com/",
+         "stable/",
+         "stock/{my_sport_companies}/company",
+         "?token=your-token")
+
+addresses |> 
+  map(GET) |> 
+  map(content) |> 
+  map(pluck, "CEO")
 
